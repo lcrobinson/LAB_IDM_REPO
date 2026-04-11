@@ -1,0 +1,7 @@
+---
+step_ca_trust_enabled: true
+step_ca_root_cert_local_src: "files/lan-basedeep-root-ca.crt"
+step_ca_root_cert_filename: "lan-basedeep-root-ca.crt"
+
+step_ca_debian_anchor_path: "/usr/local/share/ca-certificates/{{ step_ca_root_cert_filename }}"
+step_ca_redhat_anchor_path: "/etc/pki/ca-trust/source/anchors/{{ step_ca_root_cert_filename }}"

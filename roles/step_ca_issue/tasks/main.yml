@@ -1,0 +1,30 @@
+---
+- name: "Skip certificate issuance if disabled"
+  ansible.builtin.meta: end_host
+  when: not step_ca_issue_enabled | bool
+
+- name: "Ensure cert base directory exists"
+  ansible.builtin.file:
+    path: "{{ step_ca_cert_base_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: "Issue/stage certificate for {{ inventory_hostname }}"
+  acme_stage_cert:
+    domain: "{{ inventory_hostname }}"
+    acme_home: "/root/.acme.sh"
+    cert_base_dir: "{{ step_ca_cert_base_dir }}"
+    ca_url: "{{ step_ca_url }}"
+    ca_bundle: "{{ step_ca_acme_ca_bundle_path }}"
+    naming_enforce: true
+    inventory_hostname: "{{ inventory_hostname }}"
+  register: staged_cert
+
+- name: "Expose staged certificate paths as facts"
+  ansible.builtin.set_fact:
+    staged_cert_key: "{{ staged_cert.key_path }}"
+    staged_cert_fullchain: "{{ staged_cert.cert_path }}"
+    staged_cert_valid_until: "{{ staged_cert.valid_until }}"
+

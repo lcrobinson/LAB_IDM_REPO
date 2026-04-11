@@ -1,0 +1,21 @@
+is_proxmox_node: true
+ansible_host: 10.0.10.15
+ansible_user: nafuradmin
+ansible_become: true
+ansible_port: 2022
+ansible_ssh_private_key_file: /home/nafuradmin/.ssh/ansible
+ansible_python_interpreter: /usr/bin/python3
+
+# Proxmox GUI/API account
+proxmox_auth_realm: pam
+proxmox_acl_path: /
+proxmox_role: Administrator
+
+# PKI / TLS
+step_ca_issue_enabled: false
+step_ca_common_name: "prox.lan.basedeep.net"
+step_ca_cert_name: "prox"
+step_ca_sans:
+  - "prox"
+  - "prox.lan.basedeep.net"
+pve_tls_enabled: false

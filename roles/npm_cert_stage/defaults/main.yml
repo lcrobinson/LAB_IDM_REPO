@@ -1,0 +1,3 @@
+npm_cert_stage_enabled: false
+npm_certificates: []
+step_ca_cert_base_dir: "/opt/internal-pki"

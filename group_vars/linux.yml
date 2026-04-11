@@ -1,0 +1,2 @@
+admin_user_ssh_keys:
+  - "{{ lookup('file', 'files/admin_user.pub') }}"

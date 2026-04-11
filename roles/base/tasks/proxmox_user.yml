@@ -1,0 +1,50 @@
+---
+- name: Skip Proxmox user configuration on non-Proxmox hosts
+  ansible.builtin.meta: end_host
+  when: not is_proxmox_node | bool
+
+- name: Check whether pveum exists
+  ansible.builtin.stat:
+    path: /usr/sbin/pveum
+  register: pveum_bin
+
+- name: Stop if Proxmox tools are missing on a host marked as Proxmox
+  ansible.builtin.assert:
+    that:
+      - pveum_bin.stat.exists
+    fail_msg: "Host is marked as a Proxmox node, but /usr/sbin/pveum was not found."
+
+- name: Set Proxmox user principal
+  ansible.builtin.set_fact:
+    proxmox_user_principal: "{{ admin_user }}@{{ proxmox_auth_realm }}"
+
+- name: Get current Proxmox user list
+  ansible.builtin.command:
+    cmd: /usr/sbin/pveum user list
+  register: pveum_user_list
+  changed_when: false
+
+- name: Ensure Proxmox PAM user exists
+  ansible.builtin.command:
+    cmd: "/usr/sbin/pveum user add {{ proxmox_user_principal }}"
+  when: proxmox_user_principal not in pveum_user_list.stdout
+  register: pveum_user_add
+  changed_when: pveum_user_add.rc == 0
+
+- name: Get current Proxmox ACL list
+  ansible.builtin.command:
+    cmd: /usr/sbin/pveum acl list
+  register: pveum_acl_list
+  changed_when: false
+
+- name: Ensure Proxmox ACL is assigned
+  ansible.builtin.command:
+    cmd: >-
+      /usr/sbin/pveum aclmod {{ proxmox_acl_path }}
+      -user {{ proxmox_user_principal }}
+      -role {{ proxmox_role }}
+  when: >
+    proxmox_user_principal not in pveum_acl_list.stdout
+    or proxmox_role not in pveum_acl_list.stdout
+  register: pveum_acl_add
+  changed_when: pveum_acl_add.rc == 0

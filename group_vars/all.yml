@@ -1,0 +1,41 @@
+---
+# =========================
+# Baseline admin user
+# =========================
+admin_user: nafuradmin
+admin_user_sudo_nopasswd: true
+
+admin_user_ssh_keys:
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIENjMVh4FVONCCZ3owgYzLgfynm7m9hzlyPJMXZzC47+ Ansible key-pair for servers"
+
+# ========================
+# Default connection behavior
+# ========================
+# Normal Linux hosts use the admin user and sudo
+# Override in host_vars for special cases like Proxmox boostrap or OPNsense
+ansible_user: "{{ admin_user }}"
+ansible_become: true
+
+
+# =========================
+# Proxmox defaults
+# =========================
+is_proxmox_node: false
+proxmox_auth_realm: pam
+proxmox_acl_path: /
+proxmox_role: Administrator
+
+
+# =========================
+# step-ca / internal PKI defaults
+step_ca_url: "https://ca.lan.basedeep.net/acme/acme/directory"
+step_ca_root_cert_local_src: "files/lan-basedeep-root-ca.crt"
+step_ca_root_cert_filename: "lan-basedeep-root-ca.crt"
+
+# acme.sh / cert staging location
+step_ca_cert_base_dir: "/opt/internal-pki"
+step_ca_acme_ca_bundle_path: "/root/root_ca.crt"
+
+# Role toggles
+step_ca_issue_enabled: true
+pve_tls_enabled: true

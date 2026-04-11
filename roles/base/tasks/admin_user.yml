@@ -1,0 +1,66 @@
+---
+- name: Set platform-specific admin variables
+  ansible.builtin.set_fact:
+    admin_group: >-
+      {{
+        'wheel' if ansible_system == 'FreeBSD'
+        else ('wheel' if ansible_os_family == 'RedHat'
+        else 'sudo')
+      }}
+    ssh_group: >-
+      {{
+        'wheel' if ansible_system == 'FreeBSD'
+        else admin_user
+      }}
+    manage_sudoers: >-
+      {{
+        false if ansible_system == 'FreeBSD'
+        else true
+      }}
+
+- name: Ensure admin group exists (Linux only)
+  ansible.builtin.group:
+    name: "{{ admin_group }}"
+    state: present
+  when: ansible_system != "FreeBSD"
+
+- name: Ensure admin user exists
+  ansible.builtin.user:
+    name: nafuradmin
+    shell: /bin/sh
+    groups: "{{ admin_group }}"
+    append: true
+    create_home: true
+    state: present
+
+- name: Lock password for admin user (Linux only)
+  ansible.builtin.user:
+    name: nafuradmin
+    password_lock: true
+  when: ansible_os_family in ["Debian", "RedHat"]
+
+- name: Ensure .ssh directory exists for admin user
+  ansible.builtin.file:
+    path: "/home/nafuradmin/.ssh"
+    state: directory
+    owner: nafuradmin
+    group: "{{ ssh_group }}"
+    mode: "0700"
+
+- name: Install authorized key for admin user
+  ansible.posix.authorized_key:
+    user: "{{ admin_user }}"
+    key: "{{ item }}"
+  loop: "{{ admin_user_ssh_keys }}"
+
+# Linux-only sudoers management
+- name: Ensure sudoers drop-in for admin user (Linux only)
+  ansible.builtin.copy:
+    dest: "/etc/sudoers.d/nafuradmin"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "/usr/sbin/visudo -cf %s"
+    content: |
+      nafuradmin ALL=(ALL:ALL) NOPASSWD: ALL
+  when: manage_sudoers

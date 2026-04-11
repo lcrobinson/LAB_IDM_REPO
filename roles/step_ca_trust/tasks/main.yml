@@ -1,0 +1,43 @@
+---
+- name: Skip CA trust setup if disabled
+  ansible.builtin.meta: end_host
+  when: not step_ca_trust_enabled | bool
+
+- name: Ensure ca-certificates package is present on apt systems
+  ansible.builtin.apt:
+    name: ca-certificates
+    state: present
+    update_cache: true
+  when: ansible_facts.pkg_mgr == "apt"
+
+- name: Ensure ca-certificates package is present on dnf systems
+  ansible.builtin.dnf:
+    name: ca-certificates
+    state: present
+  when: ansible_facts.pkg_mgr == "dnf"
+
+- name: Enable update-ca-trust on RedHat family
+  ansible.builtin.command: update-ca-trust force-enable
+  when: ansible_os_family == "RedHat"
+  changed_when: false
+  failed_when: false
+
+- name: Install root CA on Debian family
+  ansible.builtin.copy:
+    src: "{{ step_ca_root_cert_local_src }}"
+    dest: "{{ step_ca_debian_anchor_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: ansible_os_family == "Debian"
+  notify: refresh debian ca trust
+
+- name: Install root CA on RedHat family
+  ansible.builtin.copy:
+    src: "{{ step_ca_root_cert_local_src }}"
+    dest: "{{ step_ca_redhat_anchor_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: ansible_os_family == "RedHat"
+  notify: refresh redhat ca trust

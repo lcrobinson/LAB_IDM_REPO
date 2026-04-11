@@ -1,0 +1,24 @@
+---
+- name: Skip Proxmox TLS deployment if disabled
+  ansible.builtin.meta: end_host
+  when: not pve_tls_enabled | bool
+
+- name: Install Proxmox certificate
+  ansible.builtin.copy:
+    src: "{{ step_ca_cert_base_dir }}/{{ step_ca_cert_name }}/fullchain.pem"
+    dest: /etc/pve/local/pve-ssl.pem
+    owner: root
+    group: www-data
+    mode: "0640"
+    remote_src: true
+  notify: restart pveproxy
+
+- name: Install Proxmox private key
+  ansible.builtin.copy:
+    src: "{{ step_ca_cert_base_dir }}/{{ step_ca_cert_name }}/privkey.pem"
+    dest: /etc/pve/local/pve-ssl.key
+    owner: root
+    group: www-data
+    mode: "0600"
+    remote_src: true
+  notify: restart pveproxy

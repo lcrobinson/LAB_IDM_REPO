@@ -1,0 +1,17 @@
+# Connection
+ansible_become: true
+ansible_host: 10.0.10.4
+anisble_user: nafuradmin
+ansible_ssh_private_key_file: /home/nafuradmin/.ssh/ansible
+ansible_python_interpreter: /usr/bin/python
+
+# NPM cert statging
+step_ca_issue_enabled: false
+npm_cert_stage_enabled: true
+
+npm_certificates:
+  - cert_name: technsui
+    common_name: technsui.lan.basedeep.net
+
+  - cert_name: fw
+    common_name: fw.lan.basedeep.net

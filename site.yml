@@ -1,0 +1,23 @@
+---
+- name: Baseline and CA trust
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - base
+    - step_ca_trust
+
+- name: Issue and install Proxmox certificate
+  hosts: proxmox
+  become: true
+  gather_facts: true
+  roles:
+    - step_ca_issue
+    - pve_tls
+
+- name: Issue and stage NPM certificates
+  hosts: npm_hosts
+  become: true
+  gather_facts: true
+  roles:
+    - step_ca_issue
