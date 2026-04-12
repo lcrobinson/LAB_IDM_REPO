@@ -1,4 +1,9 @@
 ---
+- name: Run & validate the step_ca_provisioner task
+  hosts: ca.lan.basedeep.net
+  roles:
+    - step_ca_provisioner
+
 - name: Baseline and CA trust
   hosts: all
   become: true
@@ -6,18 +11,11 @@
   roles:
     - base
     - step_ca_trust
+    - step_ca_issue
 
 - name: Issue and install Proxmox certificate
   hosts: proxmox
   become: true
   gather_facts: true
   roles:
-    - step_ca_issue
     - pve_tls
-
-- name: Issue and stage NPM certificates
-  hosts: npm_hosts
-  become: true
-  gather_facts: true
-  roles:
-    - step_ca_issue

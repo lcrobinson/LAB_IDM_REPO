@@ -1,0 +1,28 @@
+---
+- name: "Skip if not a step-ca host"
+  ansible.builtin.meta: end_host
+  when: not is_step_ca | default(false)
+
+- name: "Update ACME provisioner durations"
+  ansible.builtin.command: >
+    step ca provisioner update {{ step_ca_acme_provisioner }}
+      --x509-default-dur {{ step_ca_x509_default_dur }}
+      --x509-min-dur {{ step_ca_x509_min_dur }}
+      --x509-max-dur {{ step_ca_x509_max_dur }}
+  register: acme_update
+  changed_when: "'updated' in acme_update.stdout or 'success' in acme_update.stdout"
+
+- name: "Restart step-ca after provisioner update"
+  ansible.builtin.systemd:
+    name: step-ca
+    state: restarted
+  when: acme_update.changed
+
+- name: "Report provisioner status"
+  ansible.builtin.debug:
+    msg: >
+      ACME provisioner durations enforced:
+      default={{ step_ca_x509_default_dur }},
+      min={{ step_ca_x509_min_dur }},
+      max={{ step_ca_x509_max_dur }}.
+

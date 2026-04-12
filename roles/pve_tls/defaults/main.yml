@@ -1,3 +1,1 @@
-pve_tls_enabled: false
-step_ca_cert_base_dir: "/opt/internal-pki"
-step_ca_cert_name: ""
+pve_tls_enabled: true

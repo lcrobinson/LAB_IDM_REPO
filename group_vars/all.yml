@@ -6,7 +6,7 @@ admin_user: nafuradmin
 admin_user_sudo_nopasswd: true
 
 admin_user_ssh_keys:
-  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIENjMVh4FVONCCZ3owgYzLgfynm7m9hzlyPJMXZzC47+ Ansible key-pair for servers"
+  - "{{ lookup('file', 'assets/admin_user.pub') }}"
 
 # ========================
 # Default connection behavior
@@ -25,11 +25,17 @@ proxmox_auth_realm: pam
 proxmox_acl_path: /
 proxmox_role: Administrator
 
+# =========================
+# step-ca / duration Enforcement
+# =========================
+step_ca_x509_default_dur: "720h"
+step_ca_x509_min_dur: "720h"
+step_ca_x509_max_dur: "1080h"
 
 # =========================
 # step-ca / internal PKI defaults
 step_ca_url: "https://ca.lan.basedeep.net/acme/acme/directory"
-step_ca_root_cert_local_src: "files/lan-basedeep-root-ca.crt"
+step_ca_root_cert_local_src: "assets/lan-basedeep-root-ca.crt"
 step_ca_root_cert_filename: "lan-basedeep-root-ca.crt"
 
 # acme.sh / cert staging location

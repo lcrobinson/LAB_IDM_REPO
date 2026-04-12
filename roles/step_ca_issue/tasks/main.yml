@@ -1,30 +1,59 @@
 ---
-- name: "Skip certificate issuance if disabled"
-  ansible.builtin.meta: end_host
-  when: not step_ca_issue_enabled | bool
+- name: "Issue certificate for {{ inventory_hostname }} (normal mode)"
+  ansible.builtin.command: >
+    /root/.acme.sh/acme.sh --issue
+      -d {{ inventory_hostname }}
+      --server {{ step_ca_url }}
+      --home /root/.acme.sh
+      --standalone
+      --listen-v4
+  register: acme_issue
+  failed_when: false
 
-- name: "Ensure cert base directory exists"
-  ansible.builtin.file:
-    path: "{{ step_ca_cert_base_dir }}"
-    state: directory
-    owner: root
-    group: root
-    mode: "0755"
+# PATH 2 — Force re-issue when acme.sh skipped due to no domain change
+- name: "Force re-issue if acme.sh skipped due to no domain change"
+  ansible.builtin.command: >
+    /root/.acme.sh/acme.sh --renew
+      -d {{ inventory_hostname }}
+      --server {{ step_ca_url }}
+      --home /root/.acme.sh
+      --standalone
+      --listen-v4
+      --force
+  register: acme_issue_forced
+  when: "'Domains not changed' in acme_issue.stdout"
+  failed_when: false
 
-- name: "Issue/stage certificate for {{ inventory_hostname }}"
-  acme_stage_cert:
-    domain: "{{ inventory_hostname }}"
-    acme_home: "/root/.acme.sh"
-    cert_base_dir: "{{ step_ca_cert_base_dir }}"
-    ca_url: "{{ step_ca_url }}"
-    ca_bundle: "{{ step_ca_acme_ca_bundle_path }}"
-    naming_enforce: true
-    inventory_hostname: "{{ inventory_hostname }}"
-  register: staged_cert
+# PATH 3 — Fail only if both attempts failed AND it wasn't a no-change skip
+- name: "Fail if issuance failed completely"
+  ansible.builtin.fail:
+    msg: |
+      acme.sh issuance failed.
+      stdout: {{ acme_issue.stdout | default('') }}
+      stderr: {{ acme_issue.stderr | default('') }}
+  when:
+    - acme_issue.rc != 0
+    - "'Domains not changed' not in acme_issue.stdout"
 
-- name: "Expose staged certificate paths as facts"
+# PATH 1 or 2 — Determine which result to use
+- name: "Select final ACME result"
   ansible.builtin.set_fact:
-    staged_cert_key: "{{ staged_cert.key_path }}"
-    staged_cert_fullchain: "{{ staged_cert.cert_path }}"
-    staged_cert_valid_until: "{{ staged_cert.valid_until }}"
+    acme_final: "{{ acme_issue_forced if ('Domains not changed' in acme_issue.stdout) else acme_issue }}"
 
+# Stage cert + key
+- name: "Stage certificate"
+  ansible.builtin.copy:
+    src: "/root/.acme.sh/{{ inventory_hostname }}_ecc/{{ inventory_hostname }}.cer"
+    dest: "{{ step_ca_cert_base_dir }}/{{ inventory_hostname }}.crt"
+    remote_src: true
+
+- name: "Stage key"
+  ansible.builtin.copy:
+    src: "/root/.acme.sh/{{ inventory_hostname }}_ecc/{{ inventory_hostname }}.key"
+    dest: "{{ step_ca_cert_base_dir }}/{{ inventory_hostname }}.key"
+    remote_src: true
+
+- name: "Expose staged cert paths as facts"
+  ansible.builtin.set_fact:
+    staged_cert_fullchain: "{{ step_ca_cert_base_dir }}/{{ inventory_hostname }}.crt"
+    staged_cert_key: "{{ step_ca_cert_base_dir }}/{{ inventory_hostname }}.key"

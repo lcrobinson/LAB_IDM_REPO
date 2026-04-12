@@ -1,0 +1,14 @@
+is_step_ca: true
+ansible_host: 10.0.10.20
+ansible_user: nafuradmin
+ansible_become: true
+ansible_ssh_private_key_file: /home/nafuradmin/.ssh/ansible
+ansible_python_interpreter: /usr/bin/python3
+
+# Duration enforcement
+step_ca_x509_default_dur: "720h"
+step_ca_x509_min_dur: "720h"
+step_ca_x509_max_dur: "1080h"
+
+# ACME provisioner name
+step_ca_acme_provisioner: "acme"
