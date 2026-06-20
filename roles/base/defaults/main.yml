@@ -1,9 +1,0 @@
-admin_user: nafuradmin
-admin_user_shell: /bin/bash
-admin_user_ssh_keys: []
-admin_user_sudo_nopasswd: true
-
-is_proxmox_node: false
-proxmox_auth_realm: pam
-proxmox_acl_path: /
-proxmox_role: Administrator
