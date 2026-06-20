@@ -1,6 +1,6 @@
 # Auth Credentials
 admin_user_ssh_keys:
-  - "{{ lookup('file', playbook_dir + 'assets/admin_user.pub') }}"
+  - "{{ lookup('file', playbook_dir + '/assets/admin_user.pub') }}"
 
 # Internal PKI CA Details
 step_ca_issue_enabled: false
@@ -12,7 +12,7 @@ step_ca_acme_directory: "{{ step_ca_url }}/acme/acme/directory"
 step_ca_cert_base_dir: "/etc/pki/staged"
 acme_home: "/root/.acme.sh"
 acme_ca_bundle:
-  - "{{ lookup('file', playbook_dir + 'assets/basedeep-root.crt') }}"
+  - "{{ lookup('file', playbook_dir + '/assets/basedeep-root.crt') }}"
 acme_sh_path: "/root/.acme.sh/acme.sh"
 
 # Custom module add_on features
