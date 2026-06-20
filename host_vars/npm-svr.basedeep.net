@@ -1,0 +1,6 @@
+# Connection
+ansible_become: true
+ansible_host: 10.0.10.4
+anisble_user: nafuradmin
+ansible_ssh_private_key_file: /home/nafuradmin/.ssh/ansible
+ansible_python_interpreter: /usr/bin/python

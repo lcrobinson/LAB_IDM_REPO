@@ -10,11 +10,4 @@ ansible_python_interpreter: /usr/bin/python3
 proxmox_auth_realm: pam
 proxmox_acl_path: /
 
-# PKI / TLS
-step_ca_issue_enabled: true
-step_ca_common_name: "prox.lan.basedeep.net"
-step_ca_cert_name: "prox"
-step_ca_sans:
-  - "prox"
-  - "prox.lan.basedeep.net"
 pve_tls_enabled: true

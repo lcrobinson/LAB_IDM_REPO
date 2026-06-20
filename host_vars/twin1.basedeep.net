@@ -1,0 +1,10 @@
+is_step_ca: true
+ansible_host: 10.0.20.8
+ansible_user: nafuradmin
+ansible_become: true
+ansible_ssh_private_key_file: /home/nafuradmin/.ssh/ansible
+ansible_python_interpreter: /usr/bin/python3
+
+
+# ACME provisioner name
+step_ca_acme_provisioner: "acme"

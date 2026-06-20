@@ -1,0 +1,4 @@
+- name: Restart Technitium DNS
+  ansible.builtin.service:
+    name: "{{ technitium_service }}"
+    state: restarted

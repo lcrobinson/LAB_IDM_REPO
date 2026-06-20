@@ -1,46 +1,33 @@
 ---
 - name: "Skip if not an OPNsense host"
-  ansible.builtin.meta: end_host
+  meta: end_host
   when: "'firewalls' not in group_names"
 
-- name: "Ensure staged cert exists"
-  ansible.builtin.assert:
-    that:
-      - staged_cert_key is defined
-      - staged_cert_fullchain is defined
-    fail_msg: "No staged certificate found. Run step_ca_issue first."
-
-- name: "Copy cert to OPNsense"
-  ansible.builtin.copy:
+- name: "Copy staged cert to OPNsense temporary location"
+  copy:
     src: "{{ staged_cert_fullchain }}"
-    dest: "/var/etc/cert/{{ inventory_hostname }}.crt"
-    mode: "0644"
-    remote_src: true
+    dest: "/tmp/{{ inventory_hostname }}.crt"
+    owner: root
+    group: wheel
+    mode: '0600'
 
-- name: "Copy key to OPNsense"
-  ansible.builtin.copy:
+- name: "Copy staged key to OPNsense temporary location"
+  copy:
     src: "{{ staged_cert_key }}"
-    dest: "/var/etc/cert/{{ inventory_hostname }}.key"
-    mode: "0600"
-    remote_src: true
+    dest: "/tmp/{{ inventory_hostname }}.key"
+    owner: root
+    group: wheel
+    mode: '0600'
 
-- name: "Extract certificate expiration date"
-  ansible.builtin.command: >
-    openssl x509 -enddate --noout -in {{ staged_cert_fullchain }}
-  register: cert_expiry_raw
-  changed_when: false
+- name: "Move cert into OPNsense config-managed location"
+  command: mv /tmp/{{ inventory_hostname }}.crt /var/etc/cert.pem && mv /tmp/{{ inventory_hostname }}.key /var/etc/key.pem
+  become: true
 
--name: "Parse certificate expiration"
-  ansible.builtin.set_fact:
-    staged_cert_valid_until: "{{ cert_expiry_raw.stdout.split('=')[1] }}"
-
-- name: "Install cert via configctl"
-  ansible.builtin.command: >
-    configctl webgui restart
-  register: opn_restart
-  changed_when: true
+- name: "Restart OPNsense web UI"
+  command: configctl webgui restart
+  become: true
 
 - name: "Report status"
-  ansible.builtin.debug:
+  debug:
     msg: "OPNsense TLS updated for {{ inventory_hostname }}"
 

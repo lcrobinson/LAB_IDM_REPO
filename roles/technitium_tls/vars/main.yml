@@ -1,0 +1,4 @@
+acme_base_dir: "/root/.acme.sh"
+technitium_pfx_path: "/etc/dns/dns.pfx"
+technitium_service: "dns.service"
+pfx_password: ""

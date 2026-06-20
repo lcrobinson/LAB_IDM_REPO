@@ -1,0 +1,35 @@
+- name: Ensure acme.sh exists on target
+  ansible.builtin.stat:
+    path: "{{ acme_base_dir }}/acme.sh"
+  register: acme_installed
+
+- name Install acme.sh if missing
+  ansible.builtin.shell: |
+    curl https://get.acme.sh | sh
+  when: not acme_installed.stat.exists
+
+- name: Issue or renew certificate using standalone mode
+  ansible.builtin.shell: |
+    {{ acme_base_dir }}/acme.sh --issue \
+      -d {{ invventory_hostname }} \
+      --standalone \
+      --server {{ acme_server }} \
+      --keylength ec-256
+  args:
+    creates: "{{ acme_base_dir }}/{{ inventory_hostname }}_ecc/{{ inventory_hostname }}.key"
+
+- name: Convert PEM -> PFX for Technitium
+  ansible.builtin.shell: |
+    -out {{ technitium_pfx_path }} \
+    -inkey {{ acme_base_dir }}/{{ inventory_hostname }}_ecc/{{ inventory_hostname }}.key \
+    -in {{ acme_base_dir }}/{{ inventory_hostname }}_ecc/fullchain.cer \
+    -password pass:{{ pfx_password }}
+  notify: Restart Technitium DNS
+
+- name Ensure correct permissions on PFX
+  ansible.builtin.file:
+    path: "{{ technitium_pfx_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+

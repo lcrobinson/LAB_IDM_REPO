@@ -1,78 +1,35 @@
 ---
-# =====================================================================
-# Proxmox TLS install from staged certs
-# - Assumes step_ca_issue has already run and set:
-#     staged_cert_fullchain
-#     staged_cert_key
-# - No issuance logic here. Only install + restart.
-# =====================================================================
-
-- name: "Skip Proxmox TLS install if not a Proxmox host"
-  ansible.builtin.meta: end_host
-  when: not (is_proxmox_node | default(false))
-
-- name: "Skip if pve_tls is disabled"
-  ansible.builtin.meta: end_host
-  when: not (pve_tls_enabled | default(false))
-
-- name: "Ensure staged cert exists"
-  ansible.builtin.assert:
-    that:
-      - staged_cert_fullchain is defined
-      - staged_cert_key is defined
-    fail_msg: "No staged certificate found. Run step_ca_issue first."
-
-- name: "Create temporary directory for Proxmox TLS"
-  ansible.builtin.file:
-    path: /tmp/pve-tls
-    state: directory
-    owner: root
-    group: root
-    mode: "0700"
-
-- name: "Copy staged cert to temporary directory"
-  ansible.builtin.copy:
+- name: "Copy staged cert to Proxmox temporary location"
+  copy:
     src: "{{ staged_cert_fullchain }}"
-    dest: "/tmp/pve-tls/{{ inventory_hostname }}.crt"
+    dest: "/var/tmp/{{ inventory_hostname }}.crt"
     owner: root
     group: root
-    mode: "0644"
-    remote_src: true
+    mode: '0644'
 
-- name: "Copy staged key to temporary directory"
-  ansible.builtin.copy:
+- name: "Copy staged key to Proxmox temporary location"
+  copy:
     src: "{{ staged_cert_key }}"
-    dest: "/tmp/pve-tls/{{ inventory_hostname }}.key"
+    dest: "/var/tmp/{{ inventory_hostname }}.key"
     owner: root
     group: root
-    mode: "0600"
-    remote_src: true
+    mode: '0600'
 
-# pmxcfs-safe writes: avoid Ansible's temp-file behavior in /etc/pve/local
+- name: "Overwrite Proxmox pve-ssl.pem using cp to avoid pmxcfs tempfile issues"
+  command: cp /var/tmp/{{ inventory_hostname }}.crt /etc/pve/local/pve-ssl.pem
+  become: true
 
-- name: "Install key into Proxmox (pmxcfs-safe)"
-  ansible.builtin.command: >
-    cp /tmp/pve-tls/{{ inventory_hostname }}.key /etc/pve/local/pve-ssl.key
-  register: pve_key_install
-  changed_when: true
+- name: "Overwrite Proxmox pve-ssl.key using cp to avoid pmxcfs tempfile issues"
+  command: cp /var/tmp/{{ inventory_hostname }}.key /etc/pve/local/pve-ssl.key
+  become: true
 
-- name: "Install cert into Proxmox (pmxcfs-safe)"
-  ansible.builtin.command: >
-    cp /tmp/pve-tls/{{ inventory_hostname }}.crt /etc/pve/local/pve-ssl.pem
-  register: pve_cert_install
-  changed_when: true
+- name: "Set permissions on Proxmox cert and key"
+  command: chown root:www-data /etc/pve/local/pve-ssl.pem && chmod 0640 /etc/pve/local/pve-ssl.pem && chown root:www-data /etc/pve/local/pve-ssl.key && chmod 0640 /etc/pve/local/pve-ssl.key
+  become: true
 
-- name: "Restart pveproxy if cert or key changed"
-  ansible.builtin.systemd:
+- name: "Restart Proxmox proxy"
+  systemd:
     name: pveproxy
     state: restarted
-  when: pve_key_install.changed or pve_cert_install.changed
-
-# Optional: report status
-
-- name: "Report Proxmox TLS status"
-  ansible.builtin.debug:
-    msg: >
-      Proxmox TLS updated from staged cert {{ staged_cert_fullchain }}
-      and key {{ staged_cert_key }}; pveproxy restarted={{ (pve_key_install.changed or pve_cert_install.changed) | bool }}.
+  become: true
 

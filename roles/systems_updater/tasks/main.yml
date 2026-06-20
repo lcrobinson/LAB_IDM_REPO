@@ -1,0 +1,44 @@
+---
+- name: Update RedHat-family packages
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+  when: ansible_os_family == "RedHat"
+  register: dnf_result
+
+- name: Update Debian-family packages (Includes Proxmox)
+  ansible.builtin.apt:
+    update_cache: yes
+    upgrade: dist
+  when: ansible_os_family == "Debian"
+  register: apt_result
+
+- name: Check if a reboot is required (Debian/Ubuntu)
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: reboot_required_file
+  when: 
+    - ansible_os_family == "Debian"
+    - inventory_hostname not in (skip_reboot_hosts | default([]))
+
+- name: Trigger reboot handler for RedHat (if kernel updated)
+  ansible.builtin.assert:
+    that: true
+  changed_when: true
+  notify: Reboot Server
+  when: 
+    - ansible_os_family == "RedHat"
+    - dnf_result.changed
+    - "'kernel' in dnf_result.results | string"
+    - inventory_hostname not in (skip_reboot_hosts | default([]))
+
+- name: Trigger reboot handler for Debian (if file exists)
+  ansible.builtin.assert:
+    that: true
+  changed_when: true
+  notify: Reboot Server
+  when: 
+    - ansible_os_family == "Debian"
+    - reboot_required_file.stat.exists is defined
+    - reboot_required_file.stat.exists
+    - inventory_hostname not in (skip_reboot_hosts | default([]))

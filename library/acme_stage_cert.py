@@ -80,7 +80,7 @@ def main():
         f"--server {ca_url} "
         f"--home {acme_home} "
         f"--ca-bundle {ca_bundle} "
-        f"-d {domain} --standalone"
+        f"-d {domain} --dns dns_nsupdate"
     )
 
     rc, out, err = run_cmd(issue_cmd)
