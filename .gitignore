@@ -1,4 +1,7 @@
 group_vars/*vault*
 host_vars/*vault*
 *.secret
-
+.venv/
+venv/
+env/
+.ansible
