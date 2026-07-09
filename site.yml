@@ -3,5 +3,9 @@
   hosts: all
   become: yes
 
+  vars_files:
+    - vault/step_ca_chain.yml   # <-- THIS decrypts the vault file
+
   roles:
     - systems_updater
+    - tls_trust_bootstrap

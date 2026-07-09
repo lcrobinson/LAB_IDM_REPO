@@ -15,6 +15,9 @@ acme_ca_bundle:
   - "{{ lookup('file', playbook_dir + '/assets/basedeep-root.crt') }}"
 acme_sh_path: "/root/.acme.sh/acme.sh"
 
+step_root_ca: 'vault/'
+step_intermediate_ca: 'vault/'
+
 # Custom module add_on features
 naming_enforce: false
 

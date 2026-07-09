@@ -1,0 +1,10 @@
+---
+- name: update_ca_trust
+  block:
+    - name: Update CA trust (Debian/Ubuntu)
+      command: update-ca-certificates
+      when: ansible_os_family == "Debian"
+
+    - name: Update CA trust (RHEL/Rocky)
+      command: update-ca-trust extract
+      when: ansible_os_family == "RedHat"
