@@ -44,7 +44,9 @@
     dest: /etc/pki/ca-trust/source/anchors/step-root.crt
     mode: '0644'
   when: ansible_os_family == "RedHat"
-  notify: update_ca_trust
+  notify:
+  - update_ca_trust_debian
+  - update_ca_trust_redhat
 
 - name: "[RHEL_install_intermediate](ca://s?q=RHEL_install_intermediate_certificate)"
   ansible.builtin.copy:
@@ -52,4 +54,7 @@
     dest: /etc/pki/ca-trust/source/anchors/step-intermediate.crt
     mode: '0644'
   when: ansible_os_family == "RedHat"
-  notify: update_ca_trust
+  notify:
+  - update_ca_trust_debian
+  - update_ca_trust_redhat
+
