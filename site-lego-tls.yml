@@ -1,0 +1,18 @@
+---
+- name: Wildcard TLS via lego + step-ca + Bind9
+  hosts: npm
+  become: true
+  vars:
+    lego_email: "webmaster-admin@basedeep.net"
+    lego_domains:
+      - "basedeep.net"
+      - "*.basedeep.net"
+    lego_server: "https://ca1.basedeep.net/acme/acme/directory"
+    tsig_key_path: "/root/acme-update.key"
+
+    npm_cert_path: "/home/nafuradmin/containers/npm/letsencrypt/fullchain.cer"
+    npm_key_path: "/home/nafuradmin/containers/npm/letsencrypt/fullchain.key"
+
+  roles:
+    - lego_tls
+

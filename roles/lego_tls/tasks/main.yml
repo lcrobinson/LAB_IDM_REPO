@@ -1,0 +1,12 @@
+---
+# Entry point: decide whether to issue or renew, then deploy.
+
+- name: Include issue tasks (first-time issuance)
+  import_tasks: issue.yml
+
+- name: Include renew tasks (subsequent renewals)
+  import_tasks: renew.yml
+
+- name: Deploy certificate to NPM
+  import_tasks: deploy.yml
+

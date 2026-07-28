@@ -1,0 +1,52 @@
+# roles/lego_tls/tasks/renew.yml
+---
+# 1. Check if cert exists
+- name: Check existing certificate file
+  stat:
+    path: "{{ npm_cert_path }}"
+  register: cert_stat
+
+# 2. Skip renewal if cert missing
+- name: Skip renewal if certificate does not exist yet
+  debug:
+    msg: "No existing cert at {{ npm_cert_path }}; renewal skipped."
+  when: not cert_stat.stat.exists
+
+# 3. Run lego renewal (only if cert exists)
+- name: Renew wildcard certificate with lego
+  command: >
+    /usr/local/bin/lego
+    --email {{ lego_email }}
+    {% for d in lego_domains %}
+    --domains {{ d }}
+    {% endfor %}
+    --server {{ lego_server }}
+    --dns "rfc2136"
+    --dns.resolvers "10.0.0.7:53"
+    renew --days 30
+  environment:
+    RFC2136_TSIG_KEY: "acme-update"
+    RFC2136_TSIG_SECRET: "base64encodedkey"
+    RFC2136_TSIG_ALGORITHM: "hmac-sha256"
+    RFC2136_NAMESERVER: "10.0.0.7:53"
+    RFC2136_ZONE: "basedeep.net."
+  register: lego_renew
+  changed_when: "'Certificate renewed' in lego_renew.stdout"
+  when: cert_stat.stat.exists
+
+# 4. Debug lego output (for troubleshooting)
+- name: Debug lego renewal output
+  debug:
+    var: lego_renew
+  when: cert_stat.stat.exists
+
+# 5. DNS propagation check
+- name: Wait for DNS TXT record to propagate
+  command: dig @10.0.0.7 _acme-challenge.basedeep.net TXT
+  register: dns_check
+  until: dns_check.stdout is search("TXT")
+  retries: 10
+  delay: 3
+  changed_when: false
+  when: cert_stat.stat.exists
+

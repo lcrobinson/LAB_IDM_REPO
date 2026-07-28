@@ -1,0 +1,5 @@
+---
+- name: "Restart Nginx Proxy Manager (rootless Podman)"
+  become: true
+  command: systemctl --user restart systemd-nginx-proxy-manager
+

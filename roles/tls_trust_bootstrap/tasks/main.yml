@@ -16,7 +16,9 @@
     dest: /usr/local/share/ca-certificates/custom/step-root.crt
     mode: '0644'
   when: ansible_os_family == "Debian"
-  notify: update_ca_trust
+  notify:
+  - update_ca_trust_debian                                                                                                - update_ca_trust_redhat
+
 
 - name: "[Debian_install_intermediate](ca://s?q=Debian_install_intermediate_certificate)"
   ansible.builtin.copy:
@@ -24,7 +26,8 @@
     dest: /usr/local/share/ca-certificates/custom/step-intermediate.crt
     mode: '0644'
   when: ansible_os_family == "Debian"
-  notify: update_ca_trust
+  notify:
+  - update_ca_trust_debian                                                                                                - update_ca_trust_redhat
 
 
 # ===========================

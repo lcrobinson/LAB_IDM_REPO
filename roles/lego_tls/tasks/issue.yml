@@ -1,0 +1,47 @@
+# roles/lego_tls/tasks/issue.yml
+---
+# 1. Check TSIG key exists
+- name: Ensure TSIG key exists at expected path
+  stat:
+    path: "{{ tsig_key_path }}"
+  register: tsig_stat
+
+- name: Fail if TSIG key is missing
+  fail:
+    msg: "TSIG key not found at {{ tsig_key_path }}; DNS-01 cannot proceed."
+  when: not tsig_stat.stat.exists
+
+- name: Run lego to issue wildcard certificate
+  command: >
+    /usr/local/bin/lego
+    --email {{ lego_email }}
+    {% for d in lego_domains %}
+    --domains {{ d }}
+    {% endfor %}
+    --server {{ lego_server }}
+    --dns "rfc2136"
+    --dns.resolvers "10.0.0.7:53"
+    run
+  environment:
+    RFC2136_TSIG_KEY: "acme-update"
+    RFC2136_TSIG_SECRET: "jhnYq4Eq+KK27GtN5bf/EmJ63NgYVsaQtJJDoQOwK6o="
+    RFC2136_TSIG_ALGORITHM: "hmac-sha256"
+    RFC2136_NAMESERVER: "10.0.0.7:53"
+    RFC2136_ZONE: "basedeep.net."
+  register: lego_issue
+  changed_when: "'Certificate saved' in lego_issue.stdout"
+
+# 3. Debug lego output (for troubleshooting)
+- name: Debug lego issuance output
+  debug:
+    var: lego_issue
+
+# 4. DNS propagation check
+- name: Wait for DNS TXT record to propagate
+  command: dig @10.0.0.7 _acme-challenge.npm-svr.basedeep.net TXT
+  register: dns_check
+  until: dns_check.stdout is search("TXT")
+  retries: 10
+  delay: 3
+  changed_when: false
+

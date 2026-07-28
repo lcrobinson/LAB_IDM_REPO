@@ -1,0 +1,51 @@
+---
+# Copy lego's cert/key into NPM's expected paths and restart NPM if changed.
+
+- name: Locate lego certificate
+  stat:
+    path: "/root/.lego/certificates/basedeep.net.crt"
+  register: lego_cert
+
+- name: Locate lego key
+  stat:
+    path: "/root/.lego/certificates/basedeep.net.key"
+  register: lego_key
+
+- name: Fail if lego certificate is missing
+  fail:
+    msg: "lego certificate not found at {{ lego_cert.stat.path }}; deploy aborted."
+  when: not lego_cert.stat.exists
+
+- name: Fail if lego key is missing
+  fail:
+    msg: "lego key not found at {{ lego_key.stat.path }}; deploy aborted."
+  when: not lego_key.stat.exists
+
+- name: Copy wildcard certificate into NPM persistent storage
+  copy:
+    src: "/root/.lego/certificates/basedeep.net.crt"
+    dest: "{{ npm_cert_path }}"
+    owner: nafuradmin
+    group: nafuradmin
+    mode: "0644"
+
+- name: Copy wildcard private key into NPM persistent storage
+  copy:
+    src: "/root/.lego/certificates/basedeep.net.key"
+    dest: "{{ npm_key_path }}"
+    owner: nafuradmin
+    group: nafuradmin
+    mode: "0600"
+
+- name: Copy key to NPM persistent storage
+  copy:
+    src: "{{ lego_key.stat.path }}"
+    dest: "{{ npm_key_path }}"
+    owner: "{{ ansible_user | default('nafuradmin') }}"
+    mode: "0640"
+  register: key_copy
+
+- name: Ensure SELinux/AppApmar not blocking access (check only)
+  command: getenforce
+  register: selinux_status
+  changed_when: false
